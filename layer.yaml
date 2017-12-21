@@ -1,9 +1,15 @@
 includes:
   - 'layer:basic'
   - 'layer:metrics'
+  - 'layer:snap'
   - 'interface:redis'
 options:
-  basic:
-    packages:
-      - redis-server
-repo: "https://github.com:jamesbeedy/juju-charm-redis"
+  snap:
+    redis-bdx:
+      channel: stable
+      devmode: false
+      jailmode: false
+      dangerous: true
+      classic: true
+      revision: null
+repo: "https://github.com:jamesbeedy/layer-redis"

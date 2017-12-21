@@ -1,10 +1,16 @@
 import os
-import apt
+from subprocess import check_output
 from charmhelpers.core.templating import render
 
 
-DEFAULT_REDIS_CONF = os.path.join('/', 'etc', 'redis', 'redis.conf')
-CHARM_REDIS_CONF = os.path.join('/', 'etc', 'redis', 'redis-charm.conf')
+REDIS_SERVICE = 'snap.redis-bdx.redis-server'
+
+REDIS_CONF = \
+    os.path.join('/', 'var', 'snap', 'redis-bdx',
+                 'common', 'etc', 'redis', 'redis.conf')
+
+REDIS_BIN = \
+    os.path.join('/', 'snap', 'redis-bdx', 'current', 'bin', 'redis-server')
 
 
 def render_conf(cfg_path, cfg_tmpl, owner='root',
@@ -15,14 +21,13 @@ def render_conf(cfg_path, cfg_tmpl, owner='root',
            group=group, perms=perms, context=ctxt)
 
 
-def get_redis_version(pkg):
+def get_redis_version():
     """Return redis-server version
     """
-    cache = apt.cache.Cache()
-    for pkgname in cache.keys():
-        if pkgname == pkg:
-            target_pkg = cache[pkg]
-            pkg_installed = target_pkg.installed
-            if pkg_installed:
-                return pkg_installed.version.split(":")[1]
-    return False
+    redis_version_out = \
+            check_output([REDIS_BIN, "--version"]).decode().strip()
+
+    redis_version = ""
+    for item in redis_version_out.split():
+        if "v=" in item:
+            return item.split("=")[1]

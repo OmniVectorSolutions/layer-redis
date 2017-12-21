@@ -2,13 +2,13 @@ metrics:
   connected_clients:
     type: gauge
     description: connected_clients
-    command: export REDIS_HOST=$(cat /etc/redis/redis-charm.conf | grep 'bind' | cut -d ' ' -f 2) && redis-cli -h $REDIS_HOST INFO | grep 'connected_clients' | cut -d ':' -f 2
+    command: export REDIS_HOST=$(cat /var/snap/redis-bdx/common/etc/redis/redis.conf | grep 'bind' | cut -d ' ' -f 2) && /snap/bin/redis-bdx.redis-cli -h $REDIS_HOST INFO | grep 'connected_clients' | cut -d ':' -f 2
   blocked_clients:
     type: gauge
     description: blocked_clients
-    command: export REDIS_HOST=$(cat /etc/redis/redis-charm.conf | grep 'bind' | cut -d ' ' -f 2) && redis-cli -h $REDIS_HOST INFO | grep 'blocked_clients' | cut -d ':' -f 2
+    command: export REDIS_HOST=$(cat /var/snap/redis-bdx/common/etc/redis/redis.conf | grep 'bind' | cut -d ' ' -f 2) && /snap/bin/redis-bdx.redis-cli -h $REDIS_HOST INFO | grep 'blocked_clients' | cut -d ':' -f 2
   used_memory:
     type: gauge
     description: used_memory
-    command: export REDIS_HOST=$(cat /etc/redis/redis-charm.conf | grep 'bind' | cut -d ' ' -f 2) && redis-cli -h $REDIS_HOST INFO | grep 'used_memory:' | cut -d ':' -f 2
+    command: export REDIS_HOST=$(cat /var/snap/redis-bdx/common/etc/redis/redis.conf | grep 'bind' | cut -d ' ' -f 2) && /snap/bin/redis-bdx.redis-cli -h $REDIS_HOST INFO | grep 'used_memory:' | cut -d ':' -f 2
   juju-units: {}

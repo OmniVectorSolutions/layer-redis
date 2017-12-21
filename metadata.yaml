@@ -13,9 +13,15 @@ tags:
   - redis
 subordinate: false
 series:
-- yakkety
 - xenial
 - trusty
+- zesty
+- artful
 provides:
   redis:
     interface: redis
+resources:
+  redis-bdx:
+    type: file
+    filename: redis-bdx.snap
+    description: Redis bdx snap
