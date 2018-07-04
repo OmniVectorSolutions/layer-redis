@@ -17,6 +17,7 @@ from charmhelpers.core.hookenv import (
 )
 
 from charmhelpers.core.host import (
+    is_container,
     service_restart,
     service_running,
     service_start,
@@ -36,15 +37,16 @@ PRIVATE_IP = network_get('redis')['ingress-addresses'][0]
 
 @when_not('redis.system.configured')
 def configure_system_for_redis():
-    with open('/etc/sysctl.conf', 'a') as f:
-        f.write("\nvm.overcommit_memory = 1")
-    call('sysctl vm.overcommit_memory=1'.split())
+    if not is_container():
+        with open('/etc/sysctl.conf', 'a') as f:
+            f.write("\nvm.overcommit_memory = 1")
+        call('sysctl vm.overcommit_memory=1'.split())
 
-    with open('/sys/kernel/mm/transparent_hugepage/enabled', 'w') as f:
-        f.write('never')
+        with open('/sys/kernel/mm/transparent_hugepage/enabled', 'w') as f:
+            f.write('never')
 
-    with open('/proc/sys/net/core/somaxconn', 'w') as f:
-        f.write('1024')
+        with open('/proc/sys/net/core/somaxconn', 'w') as f:
+            f.write('1024')
 
     set_flag('redis.system.configured')
 
