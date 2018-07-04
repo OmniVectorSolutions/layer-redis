@@ -96,4 +96,3 @@ def provide_client_relation_data():
     if config('password'):
         ctxt['password'] = config('password')
     endpoint.configure(**ctxt)
-    clear_flag('endpoint.redis.joined')
