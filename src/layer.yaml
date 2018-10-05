@@ -1,6 +1,7 @@
 includes:
   - 'layer:basic'
   - 'layer:metrics'
+  - 'layer:nagios'
   - 'layer:snap'
   - 'interface:redis'
 options:

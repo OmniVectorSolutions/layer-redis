@@ -3,6 +3,7 @@ from subprocess import call
 from charms.reactive import (
     clear_flag,
     endpoint_from_flag,
+    hook,
     set_flag,
     when,
     when_not,
@@ -10,6 +11,7 @@ from charms.reactive import (
 
 from charmhelpers.core.hookenv import (
     application_version_set,
+    local_unit,
     network_get,
     status_set,
     config,
@@ -29,7 +31,6 @@ from charms.layer.redis import (
     REDIS_CONF,
     REDIS_SERVICE
 )
- 
 
 
 PRIVATE_IP = network_get('redis')['ingress-addresses'][0]
@@ -90,6 +91,7 @@ def set_redis_version():
         status_set('blocked', "Cannot get redis-server version")
         return
 
+
 # Client Relation
 @when('endpoint.redis.joined')
 def provide_client_relation_data():
@@ -98,3 +100,29 @@ def provide_client_relation_data():
     if config('password'):
         ctxt['password'] = config('password')
     endpoint.configure(**ctxt)
+
+
+# Set up Nagios checks when the nrpe-external-master subordinate is related
+@when('nrpe-external-master.available')
+@when_not('redis.nagios-setup.complete')
+def setup_nagios(nagios):
+    conf = config()
+    unit_name = local_unit()
+    check_base = '/usr/lib/nagios/plugins/'
+    process_check = check_base + 'check_procs'
+
+    web_check = [process_check, '-c', '1:1', '-a', 'bin/redis-server']
+    nagios.add_check(web_check, name="redis-serverprocess",
+                     description="Check for redis-server process",
+                     context=conf['nagios_context'],
+                     servicegroups=conf['nagios_servicegroups'],
+                     unit=unit_name)
+
+    set_flag('redis.nagios-setup.complete')
+
+
+# This is triggered on any config-changed, and after an upgrade-charm - you
+# don't get the latter with @when('config.changed')
+@hook('config-changed')
+def set_nrpe_flag():
+    clear_flag('redis.nagios-setup.complete')

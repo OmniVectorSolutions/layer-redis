@@ -25,9 +25,8 @@ def get_redis_version():
     """Return redis-server version
     """
     redis_version_out = \
-            check_output([REDIS_BIN, "--version"]).decode().strip()
+        check_output([REDIS_BIN, "--version"]).decode().strip()
 
-    redis_version = ""
     for item in redis_version_out.split():
         if "v=" in item:
             return item.split("=")[1]
