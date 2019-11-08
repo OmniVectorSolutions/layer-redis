@@ -42,17 +42,17 @@ import charms.leadership
 from charms.layer import status
 
 from charms.layer.redis import (
-    render_conf,
     get_redis_version,
+    render_conf,
+    redis_start_or_restart,
     REDIS_CLI,
     REDIS_DIR,
     REDIS_CONF,
     REDIS_CLUSTER_CONF,
-    REDIS_SERVICE,
 )
 
 
-SOMAXCONN = 4096
+SOMAXCONN = config('somaxconn')
 
 
 def get_cluster_nodes_info():
@@ -135,28 +135,35 @@ def write_config_start_restart_redis():
     """Write config, restart service
     """
 
-    ctxt = {'port': config('port'),
-            'databases': config('databases'),
-            'log_level': config('log-level'),
-            'tcp_keepalive': config('tcp-keepalive'),
-            'timeout': config('timeout'),
-            'tcp_backlog': SOMAXCONN,
-            'redis_dir': REDIS_DIR}
+    ctxt = {
+        'append_only': "yes" if config('append-only') else "no",
+        'port': config('port'),
+        'databases': config('databases'),
+        'log_level': config('log-level'),
+        'tcp_keepalive': config('tcp-keepalive'),
+        'timeout': config('timeout'),
+        'tcp_backlog': SOMAXCONN,
+        'redis_dir': REDIS_DIR,
+        'replica_read_only': "yes" if config('replica-read-only') else "no",
+        'save_db': config('save-db'),
+    }
 
     if config('cluster-enabled'):
         ctxt['cluster_conf'] = REDIS_CLUSTER_CONF
+
     if config('password'):
         ctxt['password'] = config('password')
+        ctxt['masterauth'] = config('password')
 
     render_conf(REDIS_CONF, 'redis.conf.tmpl', ctxt=ctxt)
 
-    if service_running(REDIS_SERVICE):
-        service_restart(REDIS_SERVICE)
-    else:
-        service_start(REDIS_SERVICE)
-
-    status.active("Redis {} available".format(
-        "cluster" if config('cluster-enabled') else "singleton"))
+    redis_start_or_restart()
+    
+    status.active(
+        "Redis {} available".format(
+            "cluster" if config('cluster-enabled') else "singleton"
+        )
+    )
     set_flag('redis.ready')
 
 

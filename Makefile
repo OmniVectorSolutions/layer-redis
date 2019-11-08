@@ -8,10 +8,16 @@ export CHARM_PUSH_RESULT := charm-store-push-result.txt
 
 # TARGETS
 lint: ## Run linter
-	@tox -e lint
+	tox -e lint
+
+smoke-test: build ## Run smoke tests
+	tox -e smoke
+
+integration-test: build ## Run integration tests
+	tox -e integration
 
 build: clean ## Build charm
-	@tox -e build
+	tox -e build
 
 deploy: build ## Deploy charm 
 	juju deploy $(CHARM_BUILD_DIR)/$(CHARM_NAME)
@@ -31,7 +37,8 @@ push: build ## Push and release charm to edge channel on charm store
 
 clean: ## Remove .tox and build dirs
 	rm -rf .tox/
-	rm -rf build/
+	rm -rf $(CHARM_BUILD_DIR)
+	rm -rf $(CHARM_DEPS_DIR)
 	rm -rf $(CHARM_PUSH_RESULT)
 
 # Display target comments in 'make help'

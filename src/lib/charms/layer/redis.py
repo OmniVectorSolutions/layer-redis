@@ -19,6 +19,13 @@ REDIS_BIN = \
 REDIS_CLI = os.path.join('/', 'snap', 'bin', 'redis-bdx.redis-cli')
 
 
+def redis_start_or_restart():
+    if service_running(REDIS_SERVICE):
+        service_restart(REDIS_SERVICE)
+    else:
+        service_start(REDIS_SERVICE)
+
+
 def render_conf(cfg_path, cfg_tmpl, owner='root',
                 group='root', ctxt={}, perms=0o644):
     if os.path.exists(cfg_path):
