@@ -1,5 +1,6 @@
 {%- if cluster_conf is defined %}
-appendonly yes
+save ""
+appendonly no
 cluster-enabled yes
 slave-read-only yes
 cluster-config-file {{cluster_conf}}
