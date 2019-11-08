@@ -51,7 +51,9 @@ from charms.layer.redis import (
     REDIS_SERVICE,
 )
 
+
 SOMAXCONN = 4096
+
 
 def get_cluster_nodes_info():
     cluster_nodes = []
@@ -90,14 +92,14 @@ def configure_system_for_redis():
         # increase open file limits
         with open("/etc/security/limits.conf", "a") as f:
             f.write(
-                "{}{}{}64000\n".format("*".ljust(17), 
-                                       "soft".ljust(8), 
+                "{}{}{}64000\n".format("*".ljust(17),
+                                       "soft".ljust(8),
                                        "nofile".ljust(16)
                                        )
                 )
             f.write(
-                "{}{}{}64000\n".format("*".ljust(17), 
-                                       "hard".ljust(8), 
+                "{}{}{}64000\n".format("*".ljust(17),
+                                       "hard".ljust(8),
                                        "nofile".ljust(16)
                                        )
                 )
