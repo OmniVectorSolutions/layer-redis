@@ -183,7 +183,8 @@ def set_redis_version():
         return
 
 
-@when('redis.cluster.enabled')
+@when('redis.cluster.enabled',
+      'leadership.is_leader')
 @when_not('leadership.set.init_masters')
 @when_any('endpoint.cluster.peer.joined',
           'endpoint.cluster.peer.changed')
