@@ -86,6 +86,23 @@ def configure_system_for_redis():
             f.write("vm.overcommit_memory = 1\n")
             f.write("net.core.somaxconn = 4096")
 
+        # increase open file limits
+        with open("/etc/security/limits.conf", "a") as f:
+            f.write(
+                "{}{}{}64000\n".format("*".ljust(17), 
+                                       "soft".ljust(8), 
+                                       "nofile".ljust(16)
+                                       )
+                )
+            f.write(
+                "{}{}{}64000\n".format("*".ljust(17), 
+                                       "hard".ljust(8), 
+                                       "nofile".ljust(16)
+                                       )
+                )
+        with open("/etc/systemd/system.conf", "a") as f:
+            f.write("DefaultLimitNOFILE=65536\n")
+
         # reload sysctl configs
         check_call(["sysctl", "-p"])
 
