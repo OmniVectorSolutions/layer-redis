@@ -51,6 +51,7 @@ from charms.layer.redis import (
     REDIS_SERVICE,
 )
 
+SOMAXCONN = 4096
 
 def get_cluster_nodes_info():
     cluster_nodes = []
@@ -84,7 +85,7 @@ def configure_system_for_redis():
     if not is_container():
         with open('/etc/sysctl.d/50-redis-charm.conf', 'w') as f:
             f.write("vm.overcommit_memory = 1\n")
-            f.write("net.core.somaxconn = 4096")
+            f.write("net.core.somaxconn = {}".format(SOMAXCONN))
 
         # increase open file limits
         with open("/etc/security/limits.conf", "a") as f:
@@ -137,6 +138,7 @@ def write_config_start_restart_redis():
             'log_level': config('log-level'),
             'tcp_keepalive': config('tcp-keepalive'),
             'timeout': config('timeout'),
+            'tcp_backlog': SOMAXCONN,
             'redis_dir': REDIS_DIR}
 
     if config('cluster-enabled'):

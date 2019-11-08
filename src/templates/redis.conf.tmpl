@@ -1,6 +1,7 @@
 {%- if cluster_conf is defined %}
 appendonly yes
 cluster-enabled yes
+slave-read-only yes
 cluster-config-file {{cluster_conf}}
 cluster-node-timeout 5000
 {%- endif %}
@@ -10,6 +11,7 @@ requirepass {{password}}
 {%- endif %}
 
 bind 0.0.0.0
+tcp-backlog {{tcp_backlog}}
 databases {{databases}}
 loglevel {{log_level}}
 port {{port}}
