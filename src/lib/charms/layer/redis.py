@@ -2,6 +2,12 @@ import os
 from subprocess import check_output
 from charmhelpers.core.templating import render
 
+from charmhelpers.core.host import (
+    service_restart,
+    service_running,
+    service_start,
+)
+
 
 REDIS_SERVICE = 'snap.redis-bdx.redis-server'
 
