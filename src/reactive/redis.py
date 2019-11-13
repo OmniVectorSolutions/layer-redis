@@ -158,7 +158,7 @@ def write_config_start_restart_redis():
     render_conf(REDIS_CONF, 'redis.conf.tmpl', ctxt=ctxt)
 
     redis_start_or_restart()
-    
+
     status.active(
         "Redis {} available".format(
             "cluster" if config('cluster-enabled') else "singleton"
