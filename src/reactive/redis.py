@@ -42,17 +42,17 @@ import charms.leadership
 from charms.layer import status
 
 from charms.layer.redis import (
-    render_conf,
     get_redis_version,
+    render_conf,
+    redis_start_or_restart,
     REDIS_CLI,
     REDIS_DIR,
     REDIS_CONF,
     REDIS_CLUSTER_CONF,
-    REDIS_SERVICE,
 )
 
 
-SOMAXCONN = 4096
+SOMAXCONN = config('somaxconn')
 
 
 def get_cluster_nodes_info():
@@ -135,28 +135,35 @@ def write_config_start_restart_redis():
     """Write config, restart service
     """
 
-    ctxt = {'port': config('port'),
-            'databases': config('databases'),
-            'log_level': config('log-level'),
-            'tcp_keepalive': config('tcp-keepalive'),
-            'timeout': config('timeout'),
-            'tcp_backlog': SOMAXCONN,
-            'redis_dir': REDIS_DIR}
+    ctxt = {
+        'append_only': "yes" if config('append-only') else "no",
+        'port': config('port'),
+        'databases': config('databases'),
+        'log_level': config('log-level'),
+        'tcp_keepalive': config('tcp-keepalive'),
+        'timeout': config('timeout'),
+        'tcp_backlog': SOMAXCONN,
+        'redis_dir': REDIS_DIR,
+        'replica_read_only': "yes" if config('replica-read-only') else "no",
+        'save_db': config('save-db'),
+    }
 
     if config('cluster-enabled'):
         ctxt['cluster_conf'] = REDIS_CLUSTER_CONF
+
     if config('password'):
         ctxt['password'] = config('password')
+        ctxt['masterauth'] = config('password')
 
     render_conf(REDIS_CONF, 'redis.conf.tmpl', ctxt=ctxt)
 
-    if service_running(REDIS_SERVICE):
-        service_restart(REDIS_SERVICE)
-    else:
-        service_start(REDIS_SERVICE)
+    redis_start_or_restart()
 
-    status.active("Redis {} available".format(
-        "cluster" if config('cluster-enabled') else "singleton"))
+    status.active(
+        "Redis {} available".format(
+            "cluster" if config('cluster-enabled') else "singleton"
+        )
+    )
     set_flag('redis.ready')
 
 
@@ -205,6 +212,7 @@ def ensure_sufficient_masters():
     peers = endpoint_from_flag(endpoint).all_units
     peer_ips = [peer._data['private-address']
                 for peer in peers if peer._data is not None]
+
     if len(peer_ips) > 1:
         status.active(
             "Minimum # masters available, got {}.".format(len(peer_ips)+1))
@@ -241,13 +249,17 @@ def create_redis_cluster():
 
     log(std_out)
 
+    # Sleep here to let cluster information become fully available
+    # so that get_cluster_nodes_info() returns the correct cluster nodes.
     sleep(1)
 
     charms.leadership.leader_set(cluster_node_ips=init_masters)
     charms.leadership.leader_set(cluster_created="true")
     charms.leadership.leader_set(
         cluster_nodes_json=json.dumps(
-            get_cluster_nodes_info()))
+            get_cluster_nodes_info()
+        )
+    )
 
     set_flag('redis.cluster.joined')
     set_flag('redis.cluster.created')
@@ -257,7 +269,7 @@ def create_redis_cluster():
       'redis.cluster.enabled')
 @when_not('leadership.set.init_masters')
 def waiting_for_min_masters():
-    """Waiting for min masters
+    """Wait for minimum number of masters.
     """
     status.blocked("Need at least 3 master nodes to bootstrap cluster...")
     return
@@ -278,7 +290,7 @@ def are_we_in_status():
 
 @when('redis.cluster.joined')
 def cluster_joined_status():
-    """Set cluster joined status
+    """Set cluster joined status.
     """
     status.active("successfully clustered")
 
@@ -291,7 +303,7 @@ def cluster_joined_status():
 @when_any('endpoint.cluster.peer.joined',
           'endpoint.cluster.peer.changed')
 def add_new_peer_nodes_to_cluster():
-    """Add new peers to cluster
+    """Add new peers to cluster.
     """
 
     if is_flag_set('endpoint.cluster.peer.joined'):
@@ -392,24 +404,44 @@ def set_nrpe_flag():
 @hook('stop')
 def rebalance_and_remove():
     """Rebalance and remove.
-    Rebalance the node slots before removal.
+    Rebalance the node slots before a unit is removed.
+
+    This enables redis cluster to scale down by
+    redistributing slots from the exiting nodes to other nodes.
     """
+
     if is_flag_set('redis.cluster.joined') and \
        not is_flag_set('redis.cluster.stopped'):
         nodes_info_json = charms.leadership.leader_get("cluster_nodes_json")
         nodes_info = json.loads(nodes_info_json)
         for node in nodes_info:
             if node['node_ip'] == unit_private_ip():
-                # Rebalance slots away from node to remove
+                # Rebalance slots away from this node.
                 cmd = ("{} --cluster rebalance {}:6379 "
                        "--cluster-weight {}=0").format(
                            REDIS_CLI, node['node_ip'], node['node_id'])
                 out = check_output(cmd, shell=True)
                 log(out)
-                # TODO: Need to figure out a way to poll here.
-                sleep(5)
+
+                # Poll the cluster slots command every second until this node
+                # is no longer in the output.
+                def do_i_have_slots():
+                    cmd = ("{} cluster slots".format(REDIS_CLI))
+                    out = check_output(cmd, shell=True).decode()
+                    if node['node_ip'] in out:
+                        return True
+                    else:
+                        return False
+
+                while do_i_have_slots():
+                    sleep(1)
+
+                # Remove node from cluster
+                #
+                # To successfully remove all remnants of this node from the
+                # cluster, we need to run `--cluster del-node` command.
+                #
                 try:
-                    # Remove node from cluster
                     cmd = "{} --cluster del-node {}:6379 {}".format(
                         REDIS_CLI, node['node_ip'], node['node_id'])
                     out = check_output(cmd, shell=True)

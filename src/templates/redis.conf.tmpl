@@ -1,23 +1,25 @@
-{%- if cluster_conf is defined %}
-save ""
-appendonly no
-cluster-enabled yes
-slave-read-only yes
-cluster-config-file {{cluster_conf}}
-cluster-node-timeout 5000
-{%- endif %}
+appendonly {{append_only}}
+bind 0.0.0.0
+databases {{databases}}
+dir {{redis_dir}}
+loglevel {{log_level}}
+port {{port}}
+replica-read-only {{replica_read_only}}
+tcp-backlog {{tcp_backlog}}
+tcp-keepalive {{tcp_keepalive}}
+timeout {{timeout}}
 
 {%- if password is defined %}
 requirepass {{password}}
+masterauth {{masterauth}}
 {%- endif %}
 
-bind 0.0.0.0
-tcp-backlog {{tcp_backlog}}
-databases {{databases}}
-loglevel {{log_level}}
-port {{port}}
-tcp-keepalive {{tcp_keepalive}}
-timeout {{timeout}}
-dir {{redis_dir}}
+{%- if cluster_conf is defined %}
+cluster-enabled yes
+cluster-config-file {{cluster_conf}}
+{{save_db}}
+cluster-node-timeout 5000
+{% else %}
+{%- endif %}
 
 

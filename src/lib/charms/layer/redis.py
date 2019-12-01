@@ -2,6 +2,12 @@ import os
 from subprocess import check_output
 from charmhelpers.core.templating import render
 
+from charmhelpers.core.host import (
+    service_restart,
+    service_running,
+    service_start,
+)
+
 
 REDIS_SERVICE = 'snap.redis-bdx.redis-server'
 
@@ -17,6 +23,13 @@ REDIS_BIN = \
     os.path.join('/', 'snap', 'redis-bdx', 'current', 'bin', 'redis-server')
 
 REDIS_CLI = os.path.join('/', 'snap', 'bin', 'redis-bdx.redis-cli')
+
+
+def redis_start_or_restart():
+    if service_running(REDIS_SERVICE):
+        service_restart(REDIS_SERVICE)
+    else:
+        service_start(REDIS_SERVICE)
 
 
 def render_conf(cfg_path, cfg_tmpl, owner='root',

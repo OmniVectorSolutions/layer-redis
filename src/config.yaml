@@ -4,6 +4,11 @@ options:
     default: 6379
     description: |
       Accept connections on the specified port.
+  save-db:
+    type: string
+    default: 'save ""'
+    description: |
+      Save db configs. Defaults to none.
   password:
     type: string
     default: ""
@@ -44,3 +49,14 @@ options:
     default: false
     description: |
       Enable or disable redis-cluster. This config can only be set pre-deploy.
+  append-only:
+    type: boolean
+    default: false
+    description: |
+      Enable dump dataset to disk.
+      Please check http://redis.io/topics/persistence for more information.
+  replica-read-only:
+    type: boolean
+    default: true
+    description: |
+      Configure a replica instance to accept writes or not.
